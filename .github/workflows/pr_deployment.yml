@@ -1,21 +1,36 @@
-name: PR Deployment
+name: Apply PR
+
 on:
   issue_comment:
     types: [created]
 
 jobs:
-  deploy:
-    name: Deploy Staging
+  update-staging:
+    name: Update Vault Staging Paths
+    runs-on: ubuntu-latest
+    if: github.event.issue.pull_request && (startsWith(github.event.comment.body, '/deploy') || startsWith(github.event.comment.body, '/reset'))
 
     permissions:
-      pull-requests: write
-      deployments: write
-      contents: write
-      checks: read
-      id-token: write
+      contents: 'read'
+      id-token: 'write'
 
-    uses: calm/github-actions/.github/workflows/frontend-rush-pr-deploy.yml@eve-5734-deploy-plus-sourcemaps
-    secrets: inherit
-    with:
-      node-version: 20.11.0
-      environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - uses: eLco/setup-vault@v1
+
+      - name: Authenticate to Evexia Staging Google Cloud
+        id: auth-evexia-staging-shared
+        uses: google-github-actions/auth@v2
+        with:
+          token_format: access_token
+          workload_identity_provider: ${{ secrets.STAGING_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.STAGING_EVEXIA_GCP_SERVICE_ACCOUNT }}
+
+      - name: Pull active cluster information
+        shell: bash
+        env:
+          GKE_CLUSTER_INFO: ${{ secrets.GKE_EVEXIA_STAGING_CLUSTER }}
+        run: |
+          echo "GKE_CLUSTER=$(echo "$GKE_CLUSTER_INFO" | jq -r '.cluster')" >> $GITHUB_ENV
+          echo "GKE_ZONE=$(echo "$GKE_CLUSTER_INFO" | jq -r '.zone')" >> $GITHUB_ENV
+          echo "GKE_PROJECT=$(echo "$GKE_CLUSTER_INFO" | jq -r '.project')" >> $GITHUB_ENV
