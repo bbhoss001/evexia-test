@@ -13,6 +13,7 @@ jobs:
       contents: write
       checks: read
       id-token: write
+      statuses: read
 
     uses: calm/github-actions/.github/workflows/frontend-rush-pr-deploy.yml@eve-5734-deploy-plus-sourcemaps
     secrets: inherit
