@@ -1,0 +1,21 @@
+name: PR Deployment
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  deploy:
+    name: Deploy Staging
+
+    permissions:
+      pull-requests: write
+      deployments: write
+      contents: write
+      checks: read
+      id-token: write
+
+    uses: calm/github-actions/.github/workflows/frontend-rush-pr-deploy.yml@eve-5734-deploy-plus-sourcemaps
+    secrets: inherit
+    with:
+      node-version: 20.11.0
+      environment: staging
